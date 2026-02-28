@@ -1,0 +1,17 @@
+# FastAPI & server (requires Pydantic v2)
+pydantic>=2.5.0,<3
+pydantic-settings>=2.1.0
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Supabase
+supabase>=2.3.0
+
+# Face embedding (optional, for known faces)
+# deepface>=0.0.79
+# opencv-python-headless>=4.9.0
+
+# Dev & testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0
