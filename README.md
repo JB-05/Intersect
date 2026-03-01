@@ -8,7 +8,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth-3ecf8e.svg)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8.svg)](https://tailwindcss.com/)
 
-Caregiver-oriented cognitive stability monitoring for dementia care, with patient onboarding, medications, appointments, caregiver surveys, and an ESP32-CAM vision module integration path.
+Caregiver-oriented cognitive stability monitoring for dementia care: patient onboarding, medications, appointments, caregiver surveys, **voice assistant** (ASR + LLM + TTS in Malayalam), **known faces with photos**, and **face recognition** (camera + TTS announcement). Ready for ESP32-CAM integration.
 
 ---
 
@@ -33,7 +33,10 @@ Caregiver-oriented cognitive stability monitoring for dementia care, with patien
 - **Appointments** — Track scheduled appointments with status (scheduled, completed, missed, cancelled)
 - **Caregiver surveys** — Weekly surveys (confusion, safety concern, stress level)
 - **Stability overview** — Stub stability endpoint and badge for future cognitive stability pipeline
-- **Known faces & camera events** — Frontend placeholders; backend schema ready for pgvector and ESP32-CAM integration
+- **Voice assistant** — Push-to-talk: record → Whisper (local ASR) → intent → OpenRouter LLM → Malayalam response; optional TTS (edge-tts) to play the response aloud. English or Malayalam input; responses always in Malayalam.
+- **Known faces** — Add people the patient should recognize: photo + name + relationship. Photos stored in Supabase Storage; optional 128-d face embedding for recognition.
+- **Face recognition** — Use the device camera; face-api.js detects faces and matches against known faces. When a known face is recognized, TTS announces in Malayalam: “ഇത് [Name], [Relationship].” (relationship terms use hardcoded Malayalam words).
+- **Patient AI logs** — Transcript, intent, and response logged per interaction (no raw audio).
 
 ---
 
@@ -45,17 +48,20 @@ Intersect/
 │   ├── app/
 │   │   ├── api/v1/             # API routes — see [API Design](docs/API_DESIGN.md)
 │   │   │   ├── router.py       # Router registration
-│   │   │   └── patients.py     # Patients, medications, appointments, surveys, stability
+│   │   │   ├── patients.py    # Patients, medications, appointments, surveys, known-faces, recognize-face
+│   │   │   └── patient_mode.py # Voice: /patient/interact, /patient/tts, voice-info
 │   │   ├── core/               # Security, config, exceptions
 │   │   ├── schemas/            # Pydantic request/response models
-│   │   ├── services/           # Business logic (patient, medication, appointment, survey)
+│   │   ├── services/           # Business logic + AI (patient, medication, known_face, ai: transcribe, intent, llm, tts, pipeline)
 │   │   ├── config.py           # Settings from environment
 │   │   ├── dependencies.py     # Auth dependency (Supabase JWT)
 │   │   └── main.py             # FastAPI app entry
 │   ├── migrations/             # One-off SQL for existing DBs (run in Supabase SQL Editor)
 │   │   ├── add_dementia_care_fields.sql
 │   │   ├── add_severity_history_diagnosis_details.sql
-│   │   └── fix_lat_lng_overflow.sql
+│   │   ├── fix_lat_lng_overflow.sql
+│   │   ├── add_patient_ai_logs.sql
+│   │   └── add_known_faces_photo_url.sql
 │   ├── supabase_schema.sql     # Full DB schema — see [Full Schema](docs/SCHEMA.md)
 │   ├── .env.example            # Backend env template
 │   ├── pyproject.toml          # Python deps (FastAPI, Supabase, PyJWT, etc.)
@@ -67,7 +73,7 @@ Intersect/
 │   │   ├── contexts/           # AuthContext (Supabase session)
 │   │   ├── hooks/              # usePatient, usePatients
 │   │   ├── lib/                # api.ts (fetch + Bearer), supabase.ts
-│   │   ├── pages/              # Landing, Login, Signup, Dashboard, Patient list/new, patient sub-pages
+│   │   ├── pages/              # Landing, Login, Signup, Dashboard, Patient list/new; patient: Overview, Medications, Known faces, Face recognition, Voice assistant, Settings
 │   │   └── types/              # TypeScript types (Patient, Medication, Appointment, etc.)
 │   ├── .env.example            # Frontend env template
 │   ├── package.json            # Scripts: dev, build, preview
@@ -126,7 +132,7 @@ The frontend proxies `/api` to the backend (see [`frontend/vite.config.ts`](fron
 
 | File | Purpose |
 |------|--------|
-| [`backend/.env.example`](backend/.env.example) | Template: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `CORS_ORIGINS` |
+| [`backend/.env.example`](backend/.env.example) | Template: Supabase, `WHISPER_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `TTS_VOICE`; see backend README |
 | [`frontend/.env.example`](frontend/.env.example) | Template: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` |
 
 Copy to `.env` or `.env.local` and fill in your Supabase project values. Do not commit secrets.

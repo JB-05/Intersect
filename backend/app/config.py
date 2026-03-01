@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # TTS: edge-tts (free, no API key). Malayalam: ml-IN-MidhunNeural, ml-IN-SobhanaNeural
     tts_voice: str = "ml-IN-MidhunNeural"
 
+    # Face recognition: L2 distance below this = match (face-api.js 128-d). Lower = stricter. Default 0.5.
+    face_recognition_threshold: float = 0.5
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

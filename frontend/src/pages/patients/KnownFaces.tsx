@@ -31,12 +31,15 @@ export function KnownFaces() {
   const [submitting, setSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [faceModelsLoaded, setFaceModelsLoaded] = useState(false)
+  const [openedFace, setOpenedFace] = useState<KnownFace | null>(null)
+  const [openedFaceImageError, setOpenedFaceImageError] = useState(false)
+  const [openedFaceImageUrl, setOpenedFaceImageUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (!showAddForm) return
     let cancelled = false
     Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
       faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL),
       faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL),
     ]).then(() => { if (!cancelled) setFaceModelsLoaded(true) }).catch(() => {})
@@ -60,7 +63,10 @@ export function KnownFaces() {
           img.src = url
         })
         try {
-          const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+          const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor()
           if (detection?.descriptor) setEmbedding(Array.from(detection.descriptor))
         } catch {
           setEmbedding(null)
@@ -225,7 +231,21 @@ export function KnownFaces() {
           {faces.map((face) => (
             <div
               key={face.id}
-              className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                setOpenedFaceImageError(false)
+                setOpenedFaceImageUrl(null)
+                setOpenedFace(face)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setOpenedFaceImageError(false)
+                  setOpenedFaceImageUrl(null)
+                  setOpenedFace(face)
+                }
+              }}
+              className="flex cursor-pointer items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm"
             >
               <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-lg font-medium text-slate-700">
                 {face.photo_url ? (
@@ -245,7 +265,7 @@ export function KnownFaces() {
                   {face.relationship?.trim() || '—'}
                 </p>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 gap-2" onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -258,6 +278,82 @@ export function KnownFaces() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {openedFace && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setOpenedFace(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Known face profile"
+        >
+          <div
+            className="relative max-h-[90vh] w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex max-h-[90vh] flex-col">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-200 p-4">
+                <h2 className="text-lg font-semibold text-slate-900">{openedFace.name}</h2>
+                <button
+                  type="button"
+                  onClick={() => setOpenedFace(null)}
+                  className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  aria-label="Close"
+                >
+                  <span className="text-2xl leading-none">&times;</span>
+                </button>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col items-center overflow-auto p-4">
+                {openedFace.photo_url && !openedFaceImageError ? (
+                  <div className="flex min-h-[200px] w-full flex-1 flex-shrink-0 items-center justify-center">
+                    <img
+                      src={openedFaceImageUrl ?? openedFace.photo_url}
+                      alt={openedFace.name}
+                      className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
+                      style={{ display: 'block' }}
+                      onError={() => {
+                        if (!openedFaceImageUrl && openedFace.photo_url?.includes('/object/public/')) {
+                          const base = (import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/$/, '')
+                          const path = openedFace.photo_url.split('/object/public/')[1]
+                          if (base && path) setOpenedFaceImageUrl(`${base}/storage/v1/object/public/${path}`)
+                          else setOpenedFaceImageError(true)
+                        } else {
+                          setOpenedFaceImageError(true)
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-40 w-40 items-center justify-center rounded-full bg-slate-200 text-4xl font-medium text-slate-600">
+                    {openedFace.name.charAt(0)}
+                  </div>
+                )}
+                <p className="mt-4 shrink-0 text-center text-slate-600">
+                  <span className="text-slate-500">Relationship:</span>{' '}
+                  {openedFace.relationship?.trim() || '—'}
+                </p>
+              </div>
+              <div className="flex shrink-0 justify-end gap-2 border-t border-slate-200 p-4">
+                <Button variant="secondary" size="sm" onClick={() => setOpenedFace(null)}>
+                  Close
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600"
+                  onClick={async () => {
+                    await handleDelete(openedFace.id)
+                    setOpenedFace(null)
+                  }}
+                  disabled={deletingId === openedFace.id}
+                >
+                  {deletingId === openedFace.id ? '…' : 'Delete'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

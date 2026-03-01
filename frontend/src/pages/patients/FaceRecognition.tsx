@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import * as faceapi from 'face-api.js'
 
 const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights'
-const INTERVAL_MS = 2000
+const INTERVAL_MS = 3500
 const ANNOUNCE_COOLDOWN_MS = 15000
 
 /** Hardcoded Malayalam words for relationship (used for TTS announcement). */
@@ -52,6 +52,7 @@ export function FaceRecognition() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastAnnouncedRef = useRef<string | null>(null)
   const lastAnnouncedAtRef = useRef<number>(0)
+  const recognitionInFlightRef = useRef(false)
 
   const [modelsLoaded, setModelsLoaded] = useState(false)
   const [modelsError, setModelsError] = useState<string | null>(null)
@@ -83,7 +84,7 @@ export function FaceRecognition() {
     const load = async () => {
       try {
         await Promise.all([
-          faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
           faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
         ])
@@ -138,11 +139,19 @@ export function FaceRecognition() {
     if (!active || !patientId || !modelsLoaded || !videoRef.current) return
 
     const runRecognition = async () => {
+      if (recognitionInFlightRef.current) return
       const video = videoRef.current
       if (!video || video.readyState < 2) return
+      recognitionInFlightRef.current = true
       try {
-        const result = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor()
-        if (!result || !result.descriptor) return
+        const result = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor()
+        if (!result || !result.descriptor) {
+          setRecognized(null)
+          return
+        }
 
         const embedding = Array.from(result.descriptor)
         const match = await recognizeFace(patientId, embedding)
@@ -162,10 +171,13 @@ export function FaceRecognition() {
         }
       } catch {
         setRecognized(null)
+      } finally {
+        recognitionInFlightRef.current = false
       }
     }
 
     intervalRef.current = setInterval(runRecognition, INTERVAL_MS)
+    runRecognition()
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
