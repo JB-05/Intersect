@@ -219,6 +219,18 @@ CREATE TABLE IF NOT EXISTS public.teleconsult_summaries (
 CREATE INDEX IF NOT EXISTS idx_teleconsult_patient_id ON public.teleconsult_summaries(patient_id);
 CREATE INDEX IF NOT EXISTS idx_teleconsult_generated_at ON public.teleconsult_summaries(generated_at);
 
+-- 15. Patient AI interaction logs (transcript, intent, response only; no raw audio or prompts)
+CREATE TABLE IF NOT EXISTS public.patient_ai_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+    transcript TEXT NOT NULL,
+    intent VARCHAR(50) NOT NULL,
+    response TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_patient_ai_logs_patient_id ON public.patient_ai_logs(patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_ai_logs_created_at ON public.patient_ai_logs(created_at);
+
 -- Trigger: create caregiver profile on auth user signup (Supabase)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$

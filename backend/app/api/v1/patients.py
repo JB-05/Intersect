@@ -1,15 +1,17 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, status, UploadFile
 
 from app.dependencies import get_current_caregiver_id
 from app.schemas.appointment import AppointmentCreate, AppointmentResponse
 from app.schemas.medication import MedicationCreate, MedicationResponse
 from app.schemas.patient import PatientCreate, PatientResponse, PatientUpdate
+from app.schemas.known_face import KnownFaceCreate, KnownFaceResponse
 from app.schemas.survey import SurveyCreate, SurveyResponse
 from app.services.appointment_service import create_appointment, list_appointments
 from app.services.medication_service import create_medication, list_medications
+from app.services.known_face_service import list_known_faces, create_known_face, create_known_face_with_photo, delete_known_face, recognize_face
 from app.services.patient_service import (
     create_patient,
     get_patient,
@@ -182,3 +184,95 @@ async def create_survey_endpoint(
         return survey.model_dump(mode="json")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/{id}/known-faces", response_model=list)
+async def list_known_faces_endpoint(
+    id: UUID,
+    caregiver_id: str = Depends(get_current_caregiver_id),
+):
+    """List known faces for a patient (if caregiver has access)."""
+    if not get_patient(id, caregiver_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    faces = list_known_faces(id)
+    return [f.model_dump(mode="json") for f in faces]
+
+
+@router.post("/{id}/known-faces", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_known_face_endpoint(
+    id: UUID,
+    name: str = Form(..., description="Name of the person"),
+    relationship: str | None = Form(None, description="Relationship to patient (e.g. daughter, neighbor)"),
+    photo: UploadFile | None = File(None, description="Face photo (JPEG/PNG)"),
+    embedding: str | None = Form(None, description="Optional 128-d face embedding as JSON array (for recognition)"),
+    caregiver_id: str = Depends(get_current_caregiver_id),
+):
+    """Add a known face with name, relationship, and optional photo. Include embedding from frontend for face recognition."""
+    if not get_patient(id, caregiver_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    name = (name or "").strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name is required")
+    emb_list: list[float] | None = None
+    if embedding:
+        try:
+            import json
+            emb_list = json.loads(embedding)
+            if not isinstance(emb_list, list) or len(emb_list) != 128:
+                emb_list = None
+        except Exception:
+            emb_list = None
+    try:
+        if photo and photo.filename:
+            content_type = photo.content_type or "image/jpeg"
+            if content_type not in ("image/jpeg", "image/png", "image/webp"):
+                content_type = "image/jpeg"
+            photo_bytes = await photo.read()
+            if len(photo_bytes) > 10 * 1024 * 1024:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Photo must be under 10MB")
+            if len(photo_bytes) > 0:
+                face = create_known_face_with_photo(id, name, relationship, photo_bytes, content_type, embedding=emb_list)
+            else:
+                from app.schemas.known_face import KnownFaceCreate
+                face = create_known_face(id, KnownFaceCreate(name=name, relationship=relationship))
+        else:
+            from app.schemas.known_face import KnownFaceCreate
+            face = create_known_face(id, KnownFaceCreate(name=name, relationship=relationship))
+        return face.model_dump(mode="json")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{id}/recognize-face", response_model=dict)
+async def recognize_face_endpoint(
+    id: UUID,
+    body: dict,
+    caregiver_id: str = Depends(get_current_caregiver_id),
+):
+    """Recognize a face from a 128-d embedding (e.g. from face-api.js). Returns { matched: true, name, relationship } or { matched: false }."""
+    if not get_patient(id, caregiver_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    emb = body.get("embedding")
+    if not isinstance(emb, list) or len(emb) != 128:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="embedding must be an array of 128 numbers")
+    try:
+        emb = [float(x) for x in emb]
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="embedding must be 128 floats")
+    match = recognize_face(id, emb)
+    if match:
+        return {"matched": True, "name": match["name"], "relationship": match["relationship"]}
+    return {"matched": False}
+
+
+@router.delete("/{id}/known-faces/{face_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_known_face_endpoint(
+    id: UUID,
+    face_id: UUID,
+    caregiver_id: str = Depends(get_current_caregiver_id),
+):
+    """Remove a known face (if caregiver has access)."""
+    if not get_patient(id, caregiver_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    if not delete_known_face(id, face_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Known face not found")

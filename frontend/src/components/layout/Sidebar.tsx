@@ -5,8 +5,10 @@ const patientNav = [
   { to: 'medications', label: 'Medications' },
   { to: 'appointments', label: 'Appointments' },
   { to: 'surveys', label: 'Surveys' },
-  { to: 'contacts', label: 'Contacts' },
+  { to: 'known-faces', label: 'Known faces' },
+  { to: 'face-recognition', label: 'Face recognition' },
   { to: 'events', label: 'Events' },
+  { to: 'voice', label: 'Voice assistant' },
   { to: 'settings', label: 'Settings' },
 ]
 

@@ -8,8 +8,10 @@ const navLinks = [
   { to: 'medications', label: 'Medications', icon: '💊' },
   { to: 'appointments', label: 'Appointments', icon: '📅' },
   { to: 'surveys', label: 'Surveys', icon: '📋' },
-  { to: 'contacts', label: 'Contacts', icon: '👤' },
+  { to: 'known-faces', label: 'Known faces', icon: '👤' },
+  { to: 'face-recognition', label: 'Face recognition', icon: '📷' },
   { to: 'events', label: 'Events', icon: '📡' },
+  { to: 'voice', label: 'Voice assistant', icon: '🎤' },
   { to: 'settings', label: 'Settings', icon: '⚙️' },
 ]
 

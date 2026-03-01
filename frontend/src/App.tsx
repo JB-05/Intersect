@@ -15,9 +15,11 @@ import { PatientOverview } from '@/pages/patients/PatientOverview'
 import { Medications } from '@/pages/patients/Medications'
 import { Appointments } from '@/pages/patients/Appointments'
 import { Surveys } from '@/pages/patients/Surveys'
-import { Contacts } from '@/pages/patients/Contacts'
+import { KnownFaces } from '@/pages/patients/KnownFaces'
 import { Events } from '@/pages/patients/Events'
 import { Settings } from '@/pages/patients/Settings'
+import { VoiceAssistant } from '@/pages/patients/VoiceAssistant'
+import { FaceRecognition } from '@/pages/patients/FaceRecognition'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,8 +51,11 @@ function App() {
                 <Route path="medications" element={<Medications />} />
                 <Route path="appointments" element={<Appointments />} />
                 <Route path="surveys" element={<Surveys />} />
-                <Route path="contacts" element={<Contacts />} />
+                <Route path="contacts" element={<Navigate to="known-faces" replace />} />
+                <Route path="known-faces" element={<KnownFaces />} />
                 <Route path="events" element={<Events />} />
+                <Route path="voice" element={<VoiceAssistant />} />
+                <Route path="face-recognition" element={<FaceRecognition />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="/profile" element={<Profile />} />

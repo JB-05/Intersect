@@ -1,11 +1,17 @@
-# FastAPI & server (requires Pydantic v2)
+# FastAPI & server (must use Pydantic v2; v1 breaks on Python 3.12)
 pydantic>=2.5.0,<3
 pydantic-settings>=2.1.0
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
 
 # Supabase
 supabase>=2.3.0
+
+# Patient AI (voice assistant)
+openai>=1.0.0
+openai-whisper>=20231117
+edge-tts>=7.0.0
 
 # Face embedding (optional, for known faces)
 # deepface>=0.0.79

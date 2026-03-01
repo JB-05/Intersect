@@ -16,6 +16,7 @@ This document is the single reference for the complete database schema. For enti
 | [`backend/migrations/add_dementia_care_fields.sql`](../backend/migrations/add_dementia_care_fields.sql) | Adds `address`, diagnosis fields, emergency contact, primary care physician, baseline_notes to `patients`. |
 | [`backend/migrations/add_severity_history_diagnosis_details.sql`](../backend/migrations/add_severity_history_diagnosis_details.sql) | Adds `severity`, `personal_history`, diagnosing physician, stage, symptoms, treatment plan, MMSE to `patients`. |
 | [`backend/migrations/fix_lat_lng_overflow.sql`](../backend/migrations/fix_lat_lng_overflow.sql) | Changes `patients` and `location_logs` lat/long columns from `DECIMAL(10,8)` to `DOUBLE PRECISION`. |
+| [`backend/migrations/add_patient_ai_logs.sql`](../backend/migrations/add_patient_ai_logs.sql) | Adds `patient_ai_logs` table for Patient AI interaction logging (transcript, intent, response only). |
 
 If the database already existed before these columns were introduced, run the migrations in the Supabase SQL Editor in the order above (after the base schema).
 
@@ -298,6 +299,23 @@ Generated teleconsult summaries per patient.
 
 ---
 
+### 3.14 `public.patient_ai_logs`
+
+Patient AI voice interaction logs (transcript, intent, response only; no raw audio or full prompts).
+
+| Column     | Type        | Constraints                         | Default        |
+|------------|-------------|-------------------------------------|----------------|
+| id         | UUID        | PK, gen_random_uuid()               | gen_random_uuid() |
+| patient_id | UUID        | NOT NULL, REFERENCES patients(id) CASCADE | —        |
+| transcript | TEXT        | NOT NULL                            | —              |
+| intent     | VARCHAR(50) | NOT NULL                            | —              |
+| response   | TEXT        | NOT NULL                            | —              |
+| created_at | TIMESTAMPTZ | —                                   | now()          |
+
+**Indexes:** `idx_patient_ai_logs_patient_id (patient_id)`, `idx_patient_ai_logs_created_at (created_at)`
+
+---
+
 ## 4. Trigger
 
 **`handle_new_user`** — After insert on `auth.users`, insert a row into `public.caregivers` with `id = NEW.id` and `full_name = COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email)`. Uses `ON CONFLICT (id) DO NOTHING`.
@@ -324,6 +342,7 @@ auth.users ──► caregivers
    medications (► medication_logs)           appointments              caregiver_surveys
    known_faces                               camera_events              location_logs
    alerts                                    monitoring_config          teleconsult_summaries
+   patient_ai_logs
 ```
 
 For detailed ER and design notes, see [DB_SCHEMA.md](DB_SCHEMA.md).

@@ -1,9 +1,16 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolve .env from backend dir so keys load even when uvicorn is run from project root
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_ENV_LOCAL = _BACKEND_DIR / ".env.local"
+_ENV = _BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env.local", ".env"),
+        env_file=(str(_ENV_LOCAL), str(_ENV)),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -18,6 +25,18 @@ class Settings(BaseSettings):
 
     # App
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
+
+    # Patient AI (voice assistant)
+    # Whisper: runs locally (openai-whisper), no API key needed
+    # For better ASR accuracy use small/medium (base is fast but less accurate, especially for Malayalam)
+    whisper_model: str = "small"  # tiny | base | small | medium | large-v3
+    whisper_language: str = ""   # "" = auto-detect (English + Malayalam); "en" or "ml" to force one
+    ai_temp_dir: str = ""  # optional; default is system temp for uploads
+    # LLM: OpenRouter (OSS models). Uses OpenAI-compatible API.
+    openrouter_api_key: str = ""
+    openrouter_model: str = "meta-llama/llama-3.2-3b-instruct:free"  # or google/gemma-2-9b-it, etc.
+    # TTS: edge-tts (free, no API key). Malayalam: ml-IN-MidhunNeural, ml-IN-SobhanaNeural
+    tts_voice: str = "ml-IN-MidhunNeural"
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -83,6 +83,7 @@ export interface KnownFace {
   patient_id: string
   name: string
   relationship?: string
+  photo_url?: string | null
   created_at: string
 }
 
