@@ -27,14 +27,14 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
     # Patient AI (voice assistant)
-    # Whisper: runs locally (openai-whisper), no API key needed
-    # For better ASR accuracy use small/medium (base is fast but less accurate, especially for Malayalam)
-    whisper_model: str = "small"  # tiny | base | small | medium | large-v3
-    whisper_language: str = ""   # "" = auto-detect (English + Malayalam); "en" or "ml" to force one
-    ai_temp_dir: str = ""  # optional; default is system temp for uploads
+    # Whisper: runs locally (openai-whisper), model is cached after first load for low latency
+    # tiny | base = faster, less accurate; small | medium = slower, better (especially Malayalam)
+    whisper_model: str = "base"  # Set to "base" or "tiny" in .env for faster response
+    whisper_language: str = ""   # "" = auto-detect (recommended). Do not set "ml" if users speak English.
+    ai_temp_dir: str = "0.5"  # optional; default is system temp for uploads
     # LLM: OpenRouter (OSS models). Uses OpenAI-compatible API.
-    openrouter_api_key: str = ""
-    openrouter_model: str = "meta-llama/llama-3.2-3b-instruct:free"  # or google/gemma-2-9b-it, etc.
+    openrouter_api_key: str = "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"
+    openrouter_model: str = "openai/gpt-oss-120b:free"  # or google/gemma-2-9b-it, etc.
     # TTS: edge-tts (free, no API key). Malayalam: ml-IN-MidhunNeural, ml-IN-SobhanaNeural
     tts_voice: str = "ml-IN-MidhunNeural"
 

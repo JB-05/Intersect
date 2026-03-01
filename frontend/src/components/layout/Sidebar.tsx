@@ -7,6 +7,7 @@ const patientNav = [
   { to: 'surveys', label: 'Surveys' },
   { to: 'known-faces', label: 'Known faces' },
   { to: 'face-recognition', label: 'Face recognition' },
+  { to: 'restricted-areas', label: 'Restricted areas' },
   { to: 'events', label: 'Events' },
   { to: 'voice', label: 'Voice assistant' },
   { to: 'settings', label: 'Settings' },

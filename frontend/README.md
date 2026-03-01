@@ -18,7 +18,12 @@ Caregiver web app for the cognitive stability monitoring system.
 
 ## Patient features
 
-- **Overview** — Stability badge, quick links to medications, appointments, Known faces, Face recognition, Voice assistant, Settings
+- **Overview** — Stability badge, quick links to medications, appointments, Known faces, Face recognition, Restricted areas, Voice assistant, Settings
 - **Known faces** — Add people with a photo, name, and relationship. Optional face embedding is computed (face-api.js) and sent so the face can be recognized later.
 - **Face recognition** — Start camera; face-api.js detects faces and sends the descriptor to the API. When a known face is matched, TTS plays in Malayalam: “ഇത് [Name], [Relationship].” (relationships mapped to hardcoded Malayalam words)
+- **Restricted areas** — Upload an image of each restricted zone; two switches per area to **turn off camera** and/or **turn off audio**
 - **Voice assistant** — Record → send audio → get transcript, intent, and Malayalam response; optional TTS to play the response aloud
+
+## Notifications
+
+- **Notification bell** (header) — Fetches from `GET /notifications`; shows alerts, appointment reminders, and medicine reminders. When you’re on a patient page, notifications are filtered to that patient only.

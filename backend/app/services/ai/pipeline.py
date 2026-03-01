@@ -32,12 +32,12 @@ def run_interact_pipeline(
     intent = classify_intent(transcript)
     logger.info("Pipeline: transcript=%r intent=%s", (transcript or "")[:80], intent)
 
-    # 3) Verify access and build minimal context (single patient fetch cached per request via one call)
+    # 3) Verify access and build minimal context (single patient fetch)
     patient = get_patient(patient_id, caregiver_id)
     if not patient:
         response = "ക്ഷമിക്കണം, ഈ രോഗിയുടെ വിവരങ്ങൾ ലഭ്യമല്ല."
     else:
-        context = build_context_for_intent(patient_id, caregiver_id, intent)
+        context = build_context_for_intent(patient_id, caregiver_id, intent, patient=patient)
         response = generate_response(transcript, intent, context)
 
     # 4) Log only transcript, intent, response, timestamp (DB default)

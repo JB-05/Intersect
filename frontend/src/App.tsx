@@ -20,6 +20,7 @@ import { Events } from '@/pages/patients/Events'
 import { Settings } from '@/pages/patients/Settings'
 import { VoiceAssistant } from '@/pages/patients/VoiceAssistant'
 import { FaceRecognition } from '@/pages/patients/FaceRecognition'
+import { RestrictedAreas } from '@/pages/patients/RestrictedAreas'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ function App() {
                 <Route path="events" element={<Events />} />
                 <Route path="voice" element={<VoiceAssistant />} />
                 <Route path="face-recognition" element={<FaceRecognition />} />
+                <Route path="restricted-areas" element={<RestrictedAreas />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="/profile" element={<Profile />} />

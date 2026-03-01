@@ -26,16 +26,14 @@ def build_context_for_intent(
     patient_id: UUID,
     caregiver_id: str,
     intent: str,
+    patient=None,
 ) -> str:
     """
     Return minimal context string for the given intent.
-    medication_query -> medication schedule only
-    appointment_query -> upcoming appointments only
-    identity_query -> known contact names only
-    date_query -> system date only
-    general -> no sensitive data
+    If patient is provided (e.g. from pipeline), skip refetch.
     """
-    patient = get_patient(patient_id, caregiver_id)
+    if patient is None:
+        patient = get_patient(patient_id, caregiver_id)
     if not patient:
         return ""
 

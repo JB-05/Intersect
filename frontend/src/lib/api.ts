@@ -165,6 +165,51 @@ export async function getPatientTtsAudio(text: string): Promise<Blob> {
   return res.blob()
 }
 
+/** List notifications (alerts, appointments, medicine reminders). Optionally filter by patient. */
+export async function getNotifications(patientId?: string): Promise<import('@/types').Notification[]> {
+  const base = API_URL || '/api/v1'
+  const url = patientId ? `${base}/notifications?patient_id=${encodeURIComponent(patientId)}` : `${base}/notifications`
+  const headers = await getAuthHeaders()
+  const res = await fetch(url, { headers })
+  if (res.status === 401) throw new Error('UNAUTHORIZED')
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? 'Failed to load notifications')
+  }
+  return res.json()
+}
+
+/** POST restricted area with optional image (multipart). */
+export async function postRestrictedArea(
+  patientId: string,
+  payload: { name: string; image?: File }
+): Promise<import('@/types').RestrictedArea> {
+  const base = API_URL || '/api/v1'
+  const url = `${base}/patients/${patientId}/restricted-areas`
+  const { data: { session } } = await supabase.auth.getSession()
+  const form = new FormData()
+  form.append('name', payload.name.trim())
+  if (payload.image) form.append('image', payload.image, payload.image.name || 'image.jpg')
+  const headers: Record<string, string> = {}
+  if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
+  const res = await fetch(url, { method: 'POST', headers, body: form })
+  if (res.status === 401) throw new Error('UNAUTHORIZED')
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? 'Failed to add restricted area')
+  }
+  return res.json()
+}
+
+/** PATCH restricted area (name, camera_enabled, audio_enabled). */
+export async function patchRestrictedArea(
+  patientId: string,
+  areaId: string,
+  body: { name?: string; camera_enabled?: boolean; audio_enabled?: boolean }
+): Promise<import('@/types').RestrictedArea> {
+  return api.patch(`/patients/${patientId}/restricted-areas/${areaId}`, body)
+}
+
 export const api = {
   get: <T>(path: string) => fetcher<T>(path),
   post: <T>(path: string, body: unknown) =>

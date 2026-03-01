@@ -10,6 +10,7 @@ const navLinks = [
   { to: 'surveys', label: 'Surveys', icon: '📋' },
   { to: 'known-faces', label: 'Known faces', icon: '👤' },
   { to: 'face-recognition', label: 'Face recognition', icon: '📷' },
+  { to: 'restricted-areas', label: 'Restricted areas', icon: '🛑' },
   { to: 'events', label: 'Events', icon: '📡' },
   { to: 'voice', label: 'Voice assistant', icon: '🎤' },
   { to: 'settings', label: 'Settings', icon: '⚙️' },

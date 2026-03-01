@@ -17,6 +17,7 @@ This document is the single reference for the complete database schema. For enti
 | [`backend/migrations/add_severity_history_diagnosis_details.sql`](../backend/migrations/add_severity_history_diagnosis_details.sql) | Adds `severity`, `personal_history`, diagnosing physician, stage, symptoms, treatment plan, MMSE to `patients`. |
 | [`backend/migrations/fix_lat_lng_overflow.sql`](../backend/migrations/fix_lat_lng_overflow.sql) | Changes `patients` and `location_logs` lat/long columns from `DECIMAL(10,8)` to `DOUBLE PRECISION`. |
 | [`backend/migrations/add_patient_ai_logs.sql`](../backend/migrations/add_patient_ai_logs.sql) | Adds `patient_ai_logs` table for Patient AI interaction logging (transcript, intent, response only). |
+| [`backend/migrations/add_restricted_areas.sql`](../backend/migrations/add_restricted_areas.sql) | Adds `patient_restricted_areas` table (name, image_url, camera_enabled, audio_enabled per patient). |
 
 If the database already existed before these columns were introduced, run the migrations in the Supabase SQL Editor in the order above (after the base schema).
 

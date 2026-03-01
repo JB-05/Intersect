@@ -138,7 +138,16 @@ export function VoiceAssistant() {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       }
       streamRef.current = stream
-      const mr = new MediaRecorder(stream)
+      let mr: MediaRecorder
+      try {
+        const opts: MediaRecorderOptions = { audioBitsPerSecond: 32000 }
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          opts.mimeType = 'audio/webm;codecs=opus'
+        }
+        mr = new MediaRecorder(stream, opts)
+      } catch {
+        mr = new MediaRecorder(stream)
+      }
       mediaRecorderRef.current = mr
       chunksRef.current = []
       mr.ondataavailable = (e) => {
@@ -189,8 +198,8 @@ export function VoiceAssistant() {
       <h1 className="text-2xl font-semibold text-slate-900">Voice assistant</h1>
       <p className="text-slate-600">
         {mode === 'live'
-          ? 'Start recording, speak in English or Malayalam; the assistant will reply in Malayalam. Ask about medications, appointments, or the date.'
-          : 'Hold the button and speak (English or Malayalam), then release to send. Replies are in Malayalam.'}
+          ? 'Start recording, speak in English or Malayalam; the assistant will reply in Malayalam. Keep clips under 10 seconds for faster response.'
+          : 'Hold the button and speak (English or Malayalam), then release to send. Short clips respond faster.'}
       </p>
 
       <div className="flex gap-2">

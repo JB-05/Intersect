@@ -8,7 +8,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth-3ecf8e.svg)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8.svg)](https://tailwindcss.com/)
 
-Caregiver-oriented cognitive stability monitoring for dementia care: patient onboarding, medications, appointments, caregiver surveys, **voice assistant** (ASR + LLM + TTS in Malayalam), **known faces with photos**, and **face recognition** (camera + TTS announcement). Ready for ESP32-CAM integration.
+Caregiver-oriented cognitive stability monitoring for dementia care: patient onboarding, medications, appointments, caregiver surveys, **voice assistant** (ASR + LLM + TTS in Malayalam), **known faces with photos**, **face recognition** (camera + TTS announcement), **restricted areas** (upload zone images, turn off camera/audio per area), and **notifications** (alerts, medicine reminders, appointment reminders—accurate per patient). Ready for ESP32-CAM integration.
 
 ---
 
@@ -37,6 +37,8 @@ Caregiver-oriented cognitive stability monitoring for dementia care: patient onb
 - **Known faces** — Add people the patient should recognize: photo + name + relationship. Photos stored in Supabase Storage; optional 128-d face embedding for recognition.
 - **Face recognition** — Use the device camera; face-api.js detects faces and matches against known faces. When a known face is recognized, TTS announces in Malayalam: “ഇത് [Name], [Relationship].” (relationship terms use hardcoded Malayalam words).
 - **Patient AI logs** — Transcript, intent, and response logged per interaction (no raw audio).
+- **Restricted areas** — Per patient: upload an image of a restricted zone and use two switches to turn off camera and/or audio for that area.
+- **Notifications** — Bell icon in the header: real-time alerts (unresolved), upcoming appointments (next 24h), and medicine reminders. When viewing a patient, notifications are filtered to that patient.
 
 ---
 
@@ -48,11 +50,12 @@ Intersect/
 │   ├── app/
 │   │   ├── api/v1/             # API routes — see [API Design](docs/API_DESIGN.md)
 │   │   │   ├── router.py       # Router registration
-│   │   │   ├── patients.py    # Patients, medications, appointments, surveys, known-faces, recognize-face
-│   │   │   └── patient_mode.py # Voice: /patient/interact, /patient/tts, voice-info
+│   │   │   ├── patients.py    # Patients, medications, appointments, surveys, known-faces, recognize-face, restricted-areas
+│   │   │   ├── patient_mode.py # Voice: /patient/interact, /patient/tts, voice-info
+│   │   │   └── notifications.py # GET /notifications (alerts, appointments, med reminders; optional ?patient_id=)
 │   │   ├── core/               # Security, config, exceptions
 │   │   ├── schemas/            # Pydantic request/response models
-│   │   ├── services/           # Business logic + AI (patient, medication, known_face, ai: transcribe, intent, llm, tts, pipeline)
+│   │   ├── services/           # Business logic + AI (patient, medication, known_face, restricted_area, notification, ai: transcribe, intent, llm, tts, pipeline)
 │   │   ├── config.py           # Settings from environment
 │   │   ├── dependencies.py     # Auth dependency (Supabase JWT)
 │   │   └── main.py             # FastAPI app entry
@@ -61,7 +64,8 @@ Intersect/
 │   │   ├── add_severity_history_diagnosis_details.sql
 │   │   ├── fix_lat_lng_overflow.sql
 │   │   ├── add_patient_ai_logs.sql
-│   │   └── add_known_faces_photo_url.sql
+│   │   ├── add_known_faces_photo_url.sql
+│   │   └── add_restricted_areas.sql
 │   ├── supabase_schema.sql     # Full DB schema — see [Full Schema](docs/SCHEMA.md)
 │   ├── .env.example            # Backend env template
 │   ├── pyproject.toml          # Python deps (FastAPI, Supabase, PyJWT, etc.)
@@ -69,11 +73,11 @@ Intersect/
 │
 ├── frontend/                   # Vite + React + TypeScript + Tailwind
 │   ├── src/
-│   │   ├── components/         # UI and layout (Layout, Sidebar, PatientLayout, auth, patients)
+│   │   ├── components/         # UI and layout (Layout, Sidebar, PatientLayout, auth, patients, notifications/NotificationBell)
 │   │   ├── contexts/           # AuthContext (Supabase session)
 │   │   ├── hooks/              # usePatient, usePatients
 │   │   ├── lib/                # api.ts (fetch + Bearer), supabase.ts
-│   │   ├── pages/              # Landing, Login, Signup, Dashboard, Patient list/new; patient: Overview, Medications, Known faces, Face recognition, Voice assistant, Settings
+│   │   ├── pages/              # Landing, Login, Signup, Dashboard, Patient list/new; patient: Overview, Medications, Known faces, Face recognition, Restricted areas, Voice assistant, Settings
 │   │   └── types/              # TypeScript types (Patient, Medication, Appointment, etc.)
 │   ├── .env.example            # Frontend env template
 │   ├── package.json            # Scripts: dev, build, preview

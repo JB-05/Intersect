@@ -19,16 +19,26 @@ def _check_ffmpeg() -> None:
         raise RuntimeError(FFMPEG_MSG)
 
 
+_cached_whisper_model = None
+_cached_whisper_name = None
+
+
 def _get_whisper_model():
-    """Lazy load Whisper model (only global allowed per spec)."""
+    """Load Whisper model once and cache it. Huge latency win after first request."""
+    global _cached_whisper_model, _cached_whisper_name
     import whisper
     model_name = getattr(settings, "whisper_model", "base") or "base"
-    return whisper.load_model(model_name, device="cpu", download_root=None)
+    if _cached_whisper_model is not None and _cached_whisper_name == model_name:
+        return _cached_whisper_model
+    _cached_whisper_model = whisper.load_model(model_name, device="cpu", download_root=None)
+    _cached_whisper_name = model_name
+    return _cached_whisper_model
 
 
-# Short prompt to bias Whisper toward common assistant/health terms (Malayalam + English).
-# Helps accuracy when audio is noisy or short. More terms = better for small/base models.
+# Biases Whisper decoding. Keep language-neutral so English stays English and Malayalam stays Malayalam.
+# First line steers auto-detect: transcribe in the language spoken.
 _WHISPER_INITIAL_PROMPT = (
+    "Transcribe in the same language the user speaks. If English, output English. If Malayalam, output Malayalam. "
     "Medications, appointment, medicine, when, today, date, time, dose, doctor, nurse. "
     "മരുന്ന്, എപ്പോൾ, ഡോക്ടർ, തീയതി, ഇന്ന്, മരുന്ന് എടുക്കണം, ക്ലിനിക്ക്."
 )

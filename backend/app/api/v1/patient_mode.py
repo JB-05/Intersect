@@ -1,4 +1,5 @@
 """Patient Interaction AI: voice-based Malayalam assistant (push-to-talk)."""
+import asyncio
 import base64
 import shutil
 import tempfile
@@ -16,6 +17,7 @@ from app.services.ai.pipeline import run_interact_pipeline
 from app.services.ai.tts import text_to_speech_async
 
 _executor = ThreadPoolExecutor(max_workers=2)
+_TTS_TIMEOUT_SEC = 25
 
 router = APIRouter(prefix="/patient", tags=["patient-ai"])
 
@@ -96,7 +98,6 @@ async def patient_interact(
         ) from e
 
     try:
-        import asyncio
         loop = asyncio.get_event_loop()
         transcript, intent, response = await loop.run_in_executor(
             _executor,
@@ -125,8 +126,14 @@ async def patient_interact(
         "response": response,
     }
     if with_tts and response:
-        audio_bytes = await text_to_speech_async(response)
-        if audio_bytes:
-            out["response_audio_base64"] = base64.b64encode(audio_bytes).decode("ascii")
-            out["response_audio_media_type"] = "audio/mpeg"
+        try:
+            audio_bytes = await asyncio.wait_for(
+                text_to_speech_async(response),
+                timeout=_TTS_TIMEOUT_SEC,
+            )
+            if audio_bytes:
+                out["response_audio_base64"] = base64.b64encode(audio_bytes).decode("ascii")
+                out["response_audio_media_type"] = "audio/mpeg"
+        except asyncio.TimeoutError:
+            pass
     return out

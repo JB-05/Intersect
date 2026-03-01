@@ -48,7 +48,7 @@ def generate_response(transcript: str, intent: str, context: str) -> str:
                 {"role": "user", "content": user_content},
             ],
             temperature=0.5,
-            max_tokens=256,
+            max_tokens=128,
         )
         msg = resp.choices[0].message if resp.choices else None
         if msg and msg.content:

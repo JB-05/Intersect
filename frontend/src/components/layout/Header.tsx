@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 interface HeaderProps {
   onMenuClick?: () => void
@@ -44,7 +45,9 @@ export function Header({ onMenuClick }: HeaderProps) {
         </nav>
       </div>
 
-      <div className="relative">
+      <div className="flex items-center gap-1">
+        <NotificationBell />
+        <div className="relative">
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
@@ -77,6 +80,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
           </>
         )}
+        </div>
       </div>
     </header>
   )

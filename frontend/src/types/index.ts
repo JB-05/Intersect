@@ -92,3 +92,28 @@ export interface Caregiver {
   full_name: string
   email?: string
 }
+
+export type NotificationType = 'emergency' | 'medicine_reminder' | 'appointment_reminder' | 'stability_alert' | 'general'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  message?: string
+  patient_id?: string
+  patient_name?: string
+  link?: string
+  read: boolean
+  created_at: string
+}
+
+export interface RestrictedArea {
+  id: string
+  patient_id: string
+  name: string
+  image_url?: string | null
+  camera_enabled: boolean
+  audio_enabled: boolean
+  created_at: string
+  updated_at: string
+}

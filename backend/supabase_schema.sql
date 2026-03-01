@@ -231,6 +231,19 @@ CREATE TABLE IF NOT EXISTS public.patient_ai_logs (
 CREATE INDEX IF NOT EXISTS idx_patient_ai_logs_patient_id ON public.patient_ai_logs(patient_id);
 CREATE INDEX IF NOT EXISTS idx_patient_ai_logs_created_at ON public.patient_ai_logs(created_at);
 
+-- 16. Restricted areas (per patient: image of zone, camera/audio toggles)
+CREATE TABLE IF NOT EXISTS public.patient_restricted_areas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    image_url VARCHAR(500),
+    camera_enabled BOOLEAN DEFAULT true,
+    audio_enabled BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_restricted_areas_patient_id ON public.patient_restricted_areas(patient_id);
+
 -- Trigger: create caregiver profile on auth user signup (Supabase)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
